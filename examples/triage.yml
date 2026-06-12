@@ -1,10 +1,13 @@
-triage:
+# Copy this job into the end of your workflow file.
+  triage:
     if: failure()
-    needs: [build, test]          # their existing jobs
+    needs: [build, test]      # <- replace with your actual job names
     runs-on: ubuntu-latest
-    permissions: {actions: read, pull-requests: write}
+    permissions:
+      actions: read
+      pull-requests: write
     steps:
       - uses: alitariq4589/ci-medic@v0.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          api-key: ${{ secrets.OPENROUTER_KEY }}   # omit -> degraded mode, still useful
+          api-key: ${{ secrets.OPENROUTER_KEY }}   # omit for degraded (no-LLM) mode

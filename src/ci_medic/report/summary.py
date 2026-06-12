@@ -1,5 +1,8 @@
-def write_summary(text: str, path: str = "GITHUB_STEP_SUMMARY") -> None:
-    """Append markdown to the GitHub step summary file."""
-    with open(path, "a", encoding="utf-8") as handle:
-        handle.write(text)
-        handle.write("\n")
+import os
+
+def write_summary(markdown: str) -> None:
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    with open(path, "a") as f:
+        f.write(markdown + "\n")
