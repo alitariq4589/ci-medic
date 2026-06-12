@@ -1,0 +1,18 @@
+name: ci-triage
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: ["completed"]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: your-org/ci-medic@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          provider: ollama
+          model: llama3.1
+          config-path: .ci-medic.yml

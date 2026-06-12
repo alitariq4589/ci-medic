@@ -1,0 +1,23 @@
+name: ci-medic
+description: Analyze CI failure logs and summarize root causes.
+
+inputs:
+  github-token:
+    description: GitHub token for fetching workflow artifacts and PR comments
+    required: false
+  provider:
+    description: LLM provider to use (openai, anthropic, ollama)
+    required: false
+    default: ollama
+  model:
+    description: Model identifier
+    required: false
+    default: llama3.1
+  config-path:
+    description: Path to the ci-medic configuration file
+    required: false
+    default: .ci-medic.yml
+
+runs:
+  using: docker
+  image: Dockerfile
