@@ -1,23 +1,15 @@
 name: ci-medic
-description: Analyze CI failure logs and summarize root causes.
-
+description: AI triage for failed CI runs
 inputs:
-  github-token:
-    description: GitHub token for fetching workflow artifacts and PR comments
-    required: false
-  provider:
-    description: LLM provider to use (openai, anthropic, ollama)
-    required: false
-    default: ollama
-  model:
-    description: Model identifier
-    required: false
-    default: llama3.1
-  config-path:
-    description: Path to the ci-medic configuration file
-    required: false
-    default: .ci-medic.yml
-
+  github-token: {required: true}
+  api-key:      {required: false}
+  model:        {required: false, default: ''}
+  base-url:     {required: false, default: ''}
 runs:
   using: docker
-  image: Dockerfile
+  image: docker://ghcr.io/alitariq4589/ci-medic:v0.1.0
+  env:
+    GITHUB_TOKEN: ${{ inputs.github-token }}
+    CI_MEDIC_API_KEY: ${{ inputs.api-key }}
+    CI_MEDIC_MODEL: ${{ inputs.model }}
+    CI_MEDIC_BASE_URL: ${{ inputs.base-url }}

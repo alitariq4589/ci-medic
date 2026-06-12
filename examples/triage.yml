@@ -1,18 +1,10 @@
-name: ci-triage
-
-on:
-  workflow_run:
-    workflows: ["CI"]
-    types: ["completed"]
-
-jobs:
-  triage:
+triage:
+    if: failure()
+    needs: [build, test]          # their existing jobs
     runs-on: ubuntu-latest
+    permissions: {actions: read, pull-requests: write}
     steps:
-      - uses: actions/checkout@v4
-      - uses: your-org/ci-medic@main
+      - uses: alitariq4589/ci-medic@v0.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          provider: ollama
-          model: llama3.1
-          config-path: .ci-medic.yml
+          api-key: ${{ secrets.OPENROUTER_KEY }}   # omit -> degraded mode, still useful

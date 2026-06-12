@@ -1,7 +1,4 @@
 import hashlib
-
-
-def fingerprint(text: str) -> str:
-    """Create a 12-character SHA256 fingerprint from the normalized top error lines."""
-    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    return digest[:12]
+def fingerprint(window_texts: list[str]) -> str:
+    sig = '\n'.join(window_texts)[:2000]        # normalized already
+    return hashlib.sha256(sig.encode()).hexdigest()[:12]

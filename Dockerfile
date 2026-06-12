@@ -1,10 +1,4 @@
 FROM python:3.12-slim
-
-WORKDIR /app
-
-COPY pyproject.toml ./
-COPY src ./src
-
-RUN pip install --no-cache-dir .
-
-ENTRYPOINT ["ci-medic"]
+COPY . /app
+RUN pip install --no-cache-dir /app
+ENTRYPOINT ["ci-medic", "github"]

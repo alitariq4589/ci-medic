@@ -1,8 +1,6 @@
-def list_jobs(run_id: str):
-    """Placeholder for listing workflow jobs for a run."""
-    return []
-
-
-def download_failed_job_logs(run_id: str, job_id: str):
-    """Placeholder for downloading failed-job logs."""
-    return ""
+# GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_TOKEN (passed as input), GITHUB_JOB
+# 1. GET /repos/{repo}/actions/runs/{run_id}/jobs   -> jobs[]
+#    keep: conclusion == "failure" and name != own job name
+# 2. GET /repos/{repo}/actions/jobs/{job_id}/logs   -> 302 redirect to plain text
+#    httpx.get(..., follow_redirects=True)
+# 3. return {job_name: log_text}

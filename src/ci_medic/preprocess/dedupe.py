@@ -1,15 +1,8 @@
-from collections import Counter
-
-
-def collapse_repeats(lines: list[str], threshold: int = 2) -> list[str]:
-    """Collapse repeated adjacent lines into a single '(repeated ×N)' marker."""
-    result = []
-    counts = Counter(lines)
-    for line in lines:
-        count = counts[line]
-        if count >= threshold:
-            if not result or result[-1] != f"{line} (repeated ×{count})":
-                result.append(f"{line} (repeated ×{count})")
-        else:
-            result.append(line)
-    return result
+def dedupe(lines: list[str]) -> list[str]:
+    out, prev, count = [], object(), 0
+    for ln in lines + [object()]:               # sentinel flushes the last group
+        if ln == prev: count += 1; continue
+        if count > 1: out.append(f'  (repeated ×{count})')
+        if isinstance(ln, str): out.append(ln)
+        prev, count = ln, 1
+    return out
