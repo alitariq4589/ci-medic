@@ -21,7 +21,10 @@ def redact(text: str, threshold: float = 4.0) -> str:
         text = rx.sub('<REDACTED>', text)
     def _ent(m):
         tok = m.group(0)
-        if tok.count('/') >= 3 or tok.startswith(('http://', 'https://')):
-            return tok                          # paths/URLs: low risk, high value
-        return '<REDACTED>' if shannon_entropy(tok) > threshold else tok
+        core = tok.strip("'\"`(),;:")          # strip surrounding punctuation
+        if core.count('/') >= 3 or core.startswith(('http://', 'https://')):
+            return tok
+        if '.' in core and re.fullmatch(r'[A-Za-z0-9._-]+', core):
+            return tok
+        return '<REDACTED>' if shannon_entropy(core) > threshold else tok
     return TOKEN_RE.sub(_ent, text)
