@@ -1,1 +1,40 @@
-.venv
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+
+# Virtualenv
+.venv/
+venv/
+env/
+
+# Editable install / build backends
+*.egg-link
+pip-wheel-metadata/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+tests/fixtures/*.log
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Secrets & local env — NEVER commit
+.env
+.env.*
+*.key
+*.pem
+
+# ci-medic local artifacts
+labels.jsonl          # keep this OUT until you decide to publish the bench dataset
