@@ -1,3 +1,5 @@
+import re
+
 SUBS = [
     (re.compile(r'\d{4}-\d{2}-\d{2}[T ][\d:.,]+Z?'), '<TS>'),
     (re.compile(r'0x[0-9a-fA-F]{6,}'), '<ADDR>'),
