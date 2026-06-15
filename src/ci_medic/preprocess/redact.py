@@ -22,6 +22,12 @@ def redact(text: str, threshold: float = 4.0) -> str:
     def _ent(m):
         tok = m.group(0)
         core = tok.strip("'\"`(),;:")          # strip surrounding punctuation
+        # owner/repo slugs and shallow paths
+        if re.fullmatch(r'[A-Za-z0-9._-]+/[A-Za-z0-9._-]+', core):
+            return tok
+        # filenames with known extensions
+        if re.search(r'\.(deb|zip|tar|gz|json|csproj|whl|log|txt)$', core):
+            return tok
         if core.count('/') >= 3 or core.startswith(('http://', 'https://')):
             return tok
         if '.' in core and re.fullmatch(r'[A-Za-z0-9._-]+', core):
