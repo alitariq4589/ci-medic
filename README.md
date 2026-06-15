@@ -48,6 +48,27 @@ choose a cloud model — and ci-medic redacts secrets before any model sees them
 > Suggested fix: add a timeout+retry to the mock, or mark the test flaky.
 > Retry recommended: yes
 
+## Local / CLI usage
+
+You can run ci-medic directly on a log file, without GitHub — useful for trying it
+out or for self-hosted pipelines.
+
+```bash
+pip install ci-medic     # or: pip install -e . from a clone
+
+# Distill only — no API key needed, nothing leaves your machine:
+ci-medic analyze --file path/to/failed.log --no-llm
+
+# Full triage with an AI verdict:
+export CI_MEDIC_API_KEY="your-key"
+export CI_MEDIC_BASE_URL="https://openrouter.ai/api/v1"   # any OpenAI-compatible endpoint
+export CI_MEDIC_MODEL="anthropic/claude-3.5-haiku"        # or a local Ollama / llama.cpp model
+ci-medic analyze --file path/to/failed.log
+```
+
+For a fully local, zero-egress setup, point `CI_MEDIC_BASE_URL` at a local model
+server (Ollama at `http://localhost:11434/v1`, or llama.cpp's `llama-server`).
+
 ## Configuration
 
 Optional `.ci-medic.yml` in your repo root:
