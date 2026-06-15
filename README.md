@@ -59,6 +59,14 @@ pip install ci-medic     # or: pip install -e . from a clone
 # Distill only — no API key needed, nothing leaves your machine:
 ci-medic analyze --file path/to/failed.log --no-llm
 
+# Fetch a CI run from github using pull.sh which uses gh to pull the logs and save it tests/fixtures/*.log
+#   ./pull.sh OWNER/REPO                 # interactive: list failed runs+jobs, pick one
+#   ./pull.sh OWNER/REPO --list          # just list failed runs+jobs with IDs, no pull
+#   ./pull.sh OWNER/REPO --job JOB_ID    # pull one specific job log by id
+#   ./pull.sh OWNER/REPO --all [N]       # bulk: pull all failed jobs from latest N runs (default 1)
+
+
+
 # Full triage with an AI verdict:
 export CI_MEDIC_API_KEY="your-key"
 export CI_MEDIC_BASE_URL="https://openrouter.ai/api/v1"   # any OpenAI-compatible endpoint
