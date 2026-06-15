@@ -76,7 +76,22 @@ case "$MODE" in
       pull_job "$jid" "$name" "$i"
     done
     ;;
-
+  # ---- pull all failed jobs from one specific run (id or URL) ----------
+  --run)
+    RUN_ARG="${3:?usage: ./pull.sh OWNER/REPO --run RUN_ID_or_URL}"
+    # accept either a bare id or a full .../runs/NNN[/...] URL
+    RUN_ID=$(echo "$RUN_ARG" | grep -oE '[0-9]{6,}' | head -1)
+    [ -z "$RUN_ID" ] && { echo "couldn't parse a run id from: $RUN_ARG"; exit 1; }
+    echo "Pulling failed jobs from run $RUN_ID ..."
+    i=0
+    gh api "repos/$REPO/actions/runs/$RUN_ID/jobs" --paginate \
+      -q '.jobs[] | select(.conclusion=="failure") | "\(.id)\t\(.name)"' \
+    | while IFS=$'\t' read -r jid name; do
+        i=$((i + 1))
+        echo "── $name ──"
+        pull_job "$jid" "$name" "$i"
+      done
+    ;;
   # ---- interactive: list, then prompt for a job id ---------------------
   interactive)
     echo "Failed jobs in $REPO:"
