@@ -2,14 +2,27 @@
 import re
 from dataclasses import dataclass
 
-SIGNALS = [re.compile(p, re.I) for p in [
-    r'\bFAILED\b', r'\berror\b[:\s\[]', r'error\[E\d+\]',
-    r'Traceback \(most recent', r'panic:', r'Segmentation fault',
-    r'npm ERR!', r'exit code [1-9]', r'OOMKilled', r'No such file',
-    r'undefined reference', r'AssertionError', r'##\[error\]',
-    r'FATAL', r'ModuleNotFoundError', r'Cannot find module',
-    r'killed', r'timed? ?out', r'connection refused',
+STRONG = [re.compile(p, re.I) for p in [
+    r'##\[error\]', r'exit code [1-9]', r'Test #\d+.*\*\*\*Failed',
+    r'\d+/\d+ Test.*Failed', r'\bFAILED\b', r'fatal error',
+    r'\bpanic:', r'Segmentation fault', r'Build FAILED', r'tests? failed',
 ]]
+WEAK = [re.compile(p, re.I) for p in [
+    r'\berror\b[:\s]', r'Traceback', r'AssertionError', r'Exception',
+]]
+NEGATIVE = [re.compile(p, re.I) for p in [
+    r'failure expected', r'\bOK\b\s*$', r'\bPassed\b',
+    r'all tests OK', r'expected error',
+]]
+
+def _score_line(ln: str) -> int:
+    if any(rx.search(ln) for rx in NEGATIVE):
+        return 0                          # suppress false positives entirely
+    return (
+        sum(3 for rx in STRONG if rx.search(ln)) +
+        sum(1 for rx in WEAK   if rx.search(ln))
+    )
+
 
 @dataclass
 class Window:
@@ -19,7 +32,7 @@ def extract_windows(lines: list[str], context: int = 15,
                     budget: int = 12000) -> list[Window]:
     hits = []
     for i, ln in enumerate(lines):
-        s = sum(1 for rx in SIGNALS if rx.search(ln))
+        s = _score_line(ln)
         if s: hits.append((i, s))
     if not hits and len(lines) > 0:
         hits = [(len(lines) - 1, 1)]          # nothing matched: tail only
