@@ -1,0 +1,20 @@
+# Optional ci-medic configuration. Place this file (without the "examples/" prefix)
+# in your repository root to override defaults.
+
+# Priority-ordered model fallback chain — first that returns valid JSON wins.
+models:
+  - anthropic/claude-3.5-haiku
+  - openai/gpt-4o-mini
+  - meta-llama/llama-3.3-70b-instruct:free
+
+# Max characters of distilled log sent to the model (default 12000).
+char_budget: 12000
+
+# Job names ci-medic should skip.
+ignore_jobs:
+  - lint
+  - codeql
+
+# Extra error-signal substrings to treat as high-priority when extracting windows.
+extra_signals:
+  - MY_CUSTOM_ERROR_TOKEN

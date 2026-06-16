@@ -90,6 +90,14 @@ ignore_jobs: ["lint", "codeql"]
 extra_signals: ["MY_CUSTOM_ERROR_TOKEN"]
 ```
 
+You can check the `examples/.ci-medic.yaml` for this.
+
+By default if you define the openrouter api key, the default free model priority will be:
+
+- "anthropic/claude-3.5-haiku",          # reliable default
+- "openai/gpt-4o-mini",                  # reliable backup
+- "meta-llama/llama-3.3-70b-instruct:free",  # free fallback
+
 ## Privacy & security
 
 ci-medic redacts known secret formats (AWS keys, GitHub tokens, JWTs, private

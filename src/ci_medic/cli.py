@@ -18,12 +18,14 @@ def _distill(raw: str, budget: int):
     fp = fingerprint([w.text for w in windows])
     return distilled, fp
 
-def _make_provider(cfg):
-    if cfg.provider == "anthropic":
-        from ci_medic.llm.anthropic import Anthropic
-        return Anthropic(model=cfg.model)
-    from ci_medic.llm.openai_compat import OpenAICompat
-    return OpenAICompat(base_url=cfg.base_url or None, model=cfg.model or None)
+def _provider_factory(cfg):
+    def make(model):
+        if cfg.provider == "anthropic":
+            from ci_medic.llm.anthropic import Anthropic
+            return Anthropic(model=model)
+        from ci_medic.llm.openai_compat import OpenAICompat
+        return OpenAICompat(base_url=cfg.base_url or None, model=model)
+    return make
 
 def _has_key() -> bool:
     return bool(os.environ.get("CI_MEDIC_API_KEY"))
@@ -38,7 +40,7 @@ def cmd_analyze(args):
     if args.no_llm or not _has_key():
         return
     from ci_medic.llm.prompt import triage
-    verdict = triage(_make_provider(cfg), distilled)
+    verdict = triage(_provider_factory(cfg), cfg.models, distilled)
     verdict.fingerprint = fp
     print("\n=== VERDICT ===")
     print(verdict.model_dump_json(indent=2))
@@ -55,13 +57,13 @@ def cmd_github(args):
         print("ci-medic: no failed jobs found.")
         return
 
-    provider = _make_provider(cfg) if _has_key() else None
+    provider = _provider_factory(cfg) if _has_key() else None
     blocks = []
     for job, raw in logs.items():
         distilled, fp = _distill(raw, cfg.char_budget)
         if provider:
             from ci_medic.llm.prompt import triage
-            v = triage(provider, distilled)
+            v = triage(provider, cfg.models, distilled)
             v.fingerprint = fp
             blocks.append(render(job, v))
         else:
