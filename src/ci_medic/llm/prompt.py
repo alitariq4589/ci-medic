@@ -22,8 +22,10 @@ def triage(provider_factory, models: list[str], windows_text: str):
             raw = provider.complete(SYSTEM, windows_text)
             for attempt in range(2):
                 try:
-                    return Verdict.model_validate_json(
+                    verdict = Verdict.model_validate_json(
                         raw.strip().removeprefix("```json").removesuffix("```").strip())
+                    verdict.model = model          # stamp the winning model
+                    return verdict
                 except Exception:
                     if attempt == 0:
                         raw = provider.complete(

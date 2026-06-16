@@ -9,3 +9,4 @@ class Verdict(BaseModel):
     suggested_fix: str
     retry_recommended: bool
     fingerprint: str = ''
+    model: str = ''        # which model produced this verdict

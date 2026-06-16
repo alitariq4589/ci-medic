@@ -11,7 +11,7 @@ def render(job_name: str, v: Verdict) -> str:
         f"**Root cause:** {v.root_cause}",
         f"**Suggested fix:** {v.suggested_fix}",
         f"**Retry recommended:** {'yes' if v.retry_recommended else 'no'}",
-        f"\n`fingerprint: {v.fingerprint}`",
+        f"\n`fingerprint: {v.fingerprint}` · `model: {v.model}`",
     ]
     if v.evidence:
         ev = "\n".join(v.evidence[:8])
