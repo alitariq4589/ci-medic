@@ -10,3 +10,4 @@ class Verdict(BaseModel):
     retry_recommended: bool
     fingerprint: str = ''
     model: str = ''        # which model produced this verdict
+    fallback_trail: list[str] = []

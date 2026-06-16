@@ -38,3 +38,5 @@ tests/fixtures/*.log
 
 # ci-medic local artifacts
 labels.jsonl          # keep this OUT until you decide to publish the bench dataset
+
+analysis_results.txt

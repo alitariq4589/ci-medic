@@ -11,9 +11,11 @@ class Config:
     extra_signals: list[str] = field(default_factory=list)
     # priority-ordered fallback chain; first that succeeds wins
     models: list[str] = field(default_factory=lambda: [
-        "anthropic/claude-3.5-haiku",          # reliable default
-        "openai/gpt-4o-mini",                  # reliable backup
-        "meta-llama/llama-3.3-70b-instruct:free",  # free fallback
+        "anthropic/claude-3.5-haiku",                 # reliable (needs credit + max_tokens fix)
+        "openai/gpt-4o-mini",                          # reliable backup (needs small credit)
+        "openai/gpt-oss-120b:free",                    # strong free, worked runs
+        "qwen/qwen3-next-80b-a3b-instruct:free",       # strong free
+        "meta-llama/llama-3.3-70b-instruct:free",      # free fallback
     ])
 
 def load(path: str = ".ci-medic.yml") -> Config:

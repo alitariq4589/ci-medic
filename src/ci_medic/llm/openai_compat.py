@@ -17,6 +17,7 @@ class OpenAICompat:
             headers={'Authorization': f'Bearer {self.key}',
                      'Content-Type': 'application/json'},
             json={
+                'max_tokens': 1024,
                 'model': self.model,
                 'temperature': 0,
                 'messages': [
@@ -26,5 +27,7 @@ class OpenAICompat:
             },
             timeout=120,
         )
-        r.raise_for_status()
+        if r.status_code != 200:
+            raise RuntimeError(
+                f"[{r.status_code}] model={self.model!r}: {r.text[:300]}")
         return r.json()['choices'][0]['message']['content']
