@@ -6,9 +6,12 @@ STRONG = [re.compile(p, re.I) for p in [
     r'##\[error\]', r'exit code [1-9]', r'Test #\d+.*\*\*\*Failed',
     r'\d+/\d+ Test.*Failed', r'\bFAILED\b', r'fatal error',
     r'\bpanic:', r'Segmentation fault', r'Build FAILED', r'tests? failed',
-    r'The following tests FAILED:', r'tests? failed out of',
+    # --- new: CTest / pytest failure-summary block ---
+    r'The following tests FAILED:',
+    r'tests? failed out of',
     r'\*\*\*Failed', r'\*\*\*Exception', r'\*\*\*Not Run',
-    r'short test summary info', r'=+ \d+ failed',
+    r'short test summary info',
+    r'=+ \d+ failed',
 ]]
 WEAK = [re.compile(p, re.I) for p in [
     r'\berror\b[:\s]', r'Traceback', r'AssertionError', r'Exception',
@@ -33,15 +36,16 @@ class Window:
 
 def extract_windows(lines: list[str], context: int = 15,
                     budget: int = 12000) -> list[Window]:
+    n = len(lines)
     hits = []
     for i, ln in enumerate(lines):
         s = _score_line(ln)
         if s:
-            if i > len(lines) * 0.85:        # last 15%: the real verdict lives here
+            if i > n * 0.85:        # last 15%: the real verdict lives here
                 s += 5
             hits.append((i, s))
-    if not hits and len(lines) > 0:
-        hits = [(len(lines) - 1, 1)]          # nothing matched: tail only
+    if not hits and n > 0:
+        hits = [(n - 1, 1)]
 
     wins = [Window(max(0, i - context), min(len(lines)-1, i + context), s)
             for i, s in hits]

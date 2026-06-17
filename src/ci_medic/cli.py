@@ -34,14 +34,18 @@ def cmd_analyze(args):
     cfg = cfg_mod.load()
     raw = open(args.file, encoding="utf-8", errors="replace").read()
     distilled, fp = _distill(raw, cfg.char_budget)
-    print("=== DISTILLED EVIDENCE ===\n")
-    print(distilled)
-    print(f"\nfingerprint: {fp}")
+    if not args.json:
+        print("=== DISTILLED EVIDENCE ===\n")
+        print(distilled)
+        print(f"\nfingerprint: {fp}")
     if args.no_llm or not _has_key():
         return
     from ci_medic.llm.prompt import triage
     verdict = triage(_provider_factory(cfg), cfg.models, distilled)
     verdict.fingerprint = fp
+    if args.json:
+        print(verdict.model_dump_json())
+        return
     print("\n=== VERDICT ===")
     print(verdict.model_dump_json(indent=2))
 
@@ -83,6 +87,8 @@ def main():
     a = sub.add_parser("analyze")
     a.add_argument("--file", required=True)
     a.add_argument("--no-llm", action="store_true")
+    a.add_argument("--json", action="store_true",
+                   help="print only the verdict JSON")
     a.set_defaults(func=cmd_analyze)
 
     g = sub.add_parser("github")

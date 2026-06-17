@@ -1,0 +1,13 @@
+{"file": "01_build-flannel-cni-x86.log", "category": "dependency", "true_cause": "go.mod requires go >= 1.25.0, runner has 1.24.13"}
+{"file": "01_cpu-x64-high-perf.log", "category": "infra", "true_cause": "Bus error (core dumped) in llama-perplexity, exit 135 — likely OOM/hardware"}
+{"file": "01_job-78789188335.log", "category": "infra", "true_cause": "EACCES rmdir during runner cleanup"}
+{"file": "01.log", "category": "dependency", "true_cause": "NuGet 401 unauthorized on private Azure feed"}
+{"file": "01_pull_build.log", "category": "infra", "true_cause": "EACCES rmdir during runner cleanup"}
+{"file": "01_server-address-relwithdebinfo.log", "category": "infra", "true_cause": "Python 3.11 not available for Ubuntu 25.10"}
+{"file": "01_server-cuda.log", "category": "infra", "true_cause": "HF ContentTooShortError, incomplete model download"}
+{"file": "01_server-metal.log", "category": "infra", "true_cause": "HF download HEAD failed status -1, model download failed"}
+{"file": "01_ubuntu-24-ppc64le.log", "category": "infra", "true_cause": "HF 429 rate-limit during model download"}
+{"file": "01_update-winget-package.log", "category": "infra", "true_cause": "Ref cannot be created, branch creation failed"}
+{"file": "01_windows.log", "category": "infra", "true_cause": "HF 429 rate-limit during model download"}
+{"file": "01_windows-x64-openblas-x64--g-ninja-multi-.log", "category": "infra", "true_cause": "test-download-model failed: HF download error"}
+{"file": "01_windows-x64-vulkan-x64--g-ninja-multi-co.log", "category": "flake", "true_cause": "test-thread-safety ***Exception after 'All threads finished without errors'"}
