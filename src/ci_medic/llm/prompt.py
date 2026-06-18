@@ -1,3 +1,5 @@
+import sys
+
 SYSTEM = """You are ci-medic, a CI failure triage engine. You receive pre-extracted \
 error windows from a failed CI log. Respond with ONLY a JSON object, no markdown fences:
 {"category":"code|flake|infra|dependency|config","confidence":0.0-1.0,
@@ -34,6 +36,6 @@ def triage(provider_factory, models, windows_text):
                         attempts.append(f"{model}: invalid JSON ({e})")
         except Exception as e:
             attempts.append(f"{model}: {e}")
-            print(f"ci-medic: model {model!r} failed → {e}")
+            print(f"ci-medic: model {model!r} failed → {e}", file=sys.stderr)
             continue
     raise RuntimeError("All models failed:\n" + "\n".join(attempts))
