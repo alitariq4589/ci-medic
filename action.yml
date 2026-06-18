@@ -8,6 +8,8 @@ inputs:
 runs:
   using: docker
   image: docker://ghcr.io/alitariq4589/ci-medic:v0.1.0
+  args:
+  - github
   env:
     GITHUB_TOKEN: ${{ inputs.github-token }}
     CI_MEDIC_API_KEY: ${{ inputs.api-key }}
