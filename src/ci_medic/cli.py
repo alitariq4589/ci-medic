@@ -10,6 +10,8 @@ from ci_medic.preprocess.dedupe import dedupe
 from ci_medic.preprocess.redact import redact
 from ci_medic.preprocess.windows import extract_windows
 from ci_medic.preprocess.fingerprint import fingerprint
+from ci_medic.report.render import render_plain
+from ci_medic.report.render import render_plain
 
 def _distill(raw: str, budget: int):
     text = redact(normalize(strip(raw)))
@@ -92,7 +94,7 @@ def cmd_jenkins(args):
         return
 
     from ci_medic.llm.prompt import triage
-    from ci_medic.report.render import render
+    from ci_medic.report import render_plain
     verdict = triage(_provider_factory(cfg), cfg.models, distilled)
     verdict.fingerprint = fp
 
@@ -100,7 +102,7 @@ def cmd_jenkins(args):
         print(verdict.model_dump_json())
     else:
         # human-readable, single block — Groovy captures this for the description
-        print(render(args.job or "build", verdict))
+        print(render_plain(args.job or "build", verdict))
 
 def main():
     p = argparse.ArgumentParser(prog="ci-medic")
