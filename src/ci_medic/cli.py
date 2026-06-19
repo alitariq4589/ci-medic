@@ -94,7 +94,7 @@ def cmd_jenkins(args):
         return
 
     from ci_medic.llm.prompt import triage
-    from ci_medic.report import render_plain
+    from ci_medic.report.render import render_plain
     verdict = triage(_provider_factory(cfg), cfg.models, distilled)
     verdict.fingerprint = fp
 
