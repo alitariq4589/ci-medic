@@ -1,5 +1,6 @@
 import argparse
 import os
+from re import sub
 import sys
 
 from ci_medic import config as cfg_mod
@@ -80,6 +81,27 @@ def cmd_github(args):
     write_summary(body)
     print("ci-medic: posted.")
 
+def cmd_jenkins(args):
+    cfg = cfg_mod.load()
+    raw = open(args.file, encoding="utf-8", errors="replace").read()
+    distilled, fp = _distill(raw, cfg.char_budget)
+
+    if args.no_llm or not _has_key():
+        # no LLM: emit distilled evidence so Groovy can still set a description
+        print(f"ci-medic ({fp}): no LLM configured\n{distilled[:1500]}")
+        return
+
+    from ci_medic.llm.prompt import triage
+    from ci_medic.report.render import render
+    verdict = triage(_provider_factory(cfg), cfg.models, distilled)
+    verdict.fingerprint = fp
+
+    if args.json:
+        print(verdict.model_dump_json())
+    else:
+        # human-readable, single block — Groovy captures this for the description
+        print(render(args.job or "build", verdict))
+
 def main():
     p = argparse.ArgumentParser(prog="ci-medic")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -93,6 +115,15 @@ def main():
 
     g = sub.add_parser("github")
     g.set_defaults(func=cmd_github)
+
+    j = sub.add_parser("jenkins")
+    j.add_argument("--file", required=True,
+                   help="path to the captured console log")
+    j.add_argument("--job", default="",
+                   help="optional job/build label for the verdict header")
+    j.add_argument("--no-llm", action="store_true")
+    j.add_argument("--json", action="store_true")
+    j.set_defaults(func=cmd_jenkins)
 
     args = p.parse_args()
     args.func(args)
