@@ -4,7 +4,7 @@
 
 Secrets are redacted before any model sees them. Point it at a local model and your logs never leave your network.
 
-> Not a button you click to "explain this error." ci-medic runs automatically on failure, distills thousands of noisy log lines to the real error, redacts secrets, and posts a structured verdict — on CI systems hosted assistants don't reach.
+> Not a button you click to "explain this error". `ci-medic` runs automatically on failure, distills thousands of noisy log lines to the real error, redacts secrets, and posts a structured verdict on CI systems where single hosted AI assistant doesn't reach.
 
 ## Supported CI platforms
 
