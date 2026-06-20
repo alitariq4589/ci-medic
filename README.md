@@ -1,114 +1,199 @@
 # ci-medic
 
-**AI triage for failed CI runs.** When your pipeline goes red, ci-medic reads the
-logs, finds the actual error, and tells you *why* it failed — code bug, flaky test,
-infra problem, dependency, or config — as a comment on your PR.
+**AI triage for failed CI runs.** When your pipeline goes red, ci-medic reads the logs, finds the *actual* error in the noise, and posts a verdict — **code** bug, **flake**, **infra** problem, **dependency**, or **config** — right where you already look: a PR comment on GitHub, a build description on Jenkins.
 
-Works with any CI. Self-hostable. Your logs never leave your runner unless you
-choose a cloud model — and ci-medic redacts secrets before any model sees them.
+Vendor-agnostic. Self-hostable. Secrets are redacted *before* any model sees them, and with a local model your logs never leave your network at all.
+
+> ci-medic isn't "explain this error" behind a button you have to click. It runs automatically on failure, finds the real error across thousands of noisy lines, redacts secrets, and works on CI systems that hosted assistants can't touch — including self-hosted Jenkins.
+
+---
+
+## Supported CI platforms
+
+| Platform | Status | Output target |
+|---|---|---|
+| GitHub Actions | ✅ v0.1 | Sticky PR comment + job summary |
+| Jenkins | ✅ v0.1 | Build description |
+| GitLab CI | ⬜ planned (v0.3) | MR note |
+| Bitbucket Pipelines | ⬜ planned | — |
+
+Anything not listed can still use the **CLI** (below) against a log file today.
+
+---
+
+## GitHub Actions
+
+Add a triage job that runs only when something fails:
 
 ```yaml
-# add to the end of your workflow
+# .github/workflows/ci.yml
   triage:
     if: failure()
-    needs: [build, test]
+    needs: [build, test]          # the jobs you want triaged
     runs-on: ubuntu-latest
-    permissions: { actions: read, pull-requests: write }
+    permissions:
+      actions: read               # read the failed job logs
+      pull-requests: write        # post the sticky comment
     steps:
       - uses: alitariq4589/ci-medic@v0.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          api-key: ${{ secrets.OPENROUTER_KEY }}   # optional
+          api-key: ${{ secrets.OPENROUTER_KEY }}   # optional; see "Models"
 ```
 
-## Why ci-medic
+`github-token` uses the built-in `GITHUB_TOKEN` — no setup. Without `api-key`, ci-medic still posts the extracted error window, just without the AI verdict. The comment is **sticky**: re-runs update the same comment instead of spamming the PR.
 
-- **Vendor-agnostic.** GitHub Actions today; Jenkins and GitLab next. Not locked
-  to one CI provider.
-- **Private by default.** A deterministic pipeline strips, deduplicates, and
-  **redacts secrets** from your logs *before* any LLM call. Run a local model
-  (Ollama / llama.cpp) and nothing leaves your network at all.
-- **Useful with zero config.** No API key? ci-medic still extracts and posts the
-  real error window, just without the AI verdict.
-- **Cheap.** Logs are distilled to ~150 lines before the model sees them, so a
-  typical analysis costs a fraction of a cent — or nothing on free models.
+---
 
-## What it does
+## Jenkins
 
-1. Triggers on workflow failure.
-2. Pulls the failed jobs' logs via the GitHub API.
-3. Deterministically distills them: strip ANSI, drop timestamps, collapse repeats,
-   **redact secrets**, extract the highest-signal error windows.
-4. Sends only that distilled evidence to a model for a structured verdict.
-5. Posts a sticky PR comment + job summary:
+Jenkins needs ci-medic available on the agent and a small block in your pipeline. No Jenkins API token and no script-approval is required — ci-medic reads a log file the pipeline writes, so it stays inside the Groovy sandbox.
 
-> **ci-medic: flake (82%)**
-> Root cause: test_upload timed out waiting on a network mock that never
-> resolved. Non-deterministic; unrelated to the diff.
-> Suggested fix: add a timeout+retry to the mock, or mark the test flaky.
-> Retry recommended: yes
+**1. Make ci-medic available on the agent.** Bake it into your Jenkins image:
 
-## Local / CLI usage
+```dockerfile
+FROM jenkins/jenkins:lts-jdk17
+USER root
+RUN apt-get update && apt-get install -y python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+RUN python3 -m pip install --break-system-packages INSTALL_LINE
+USER jenkins
+```
 
-You can run ci-medic directly on a log file, without GitHub — useful for trying it
-out or for self-hosted pipelines.
+Provide your model key as an environment variable when you run the controller (or set it as a Jenkins credential and inject it into the stage):
 
 ```bash
-pip install ci-medic     # or: pip install -e . from a clone
+docker run -d --name jenkins -p 8080:8080 \
+  -e CI_MEDIC_API_KEY="$CI_MEDIC_API_KEY" \
+  your-jenkins-image
+```
 
-# Distill only — no API key needed, nothing leaves your machine:
+**2. Add the triage block to your `Jenkinsfile`.** Tee the build output to a file, then run ci-medic against it on failure and write the verdict to the build description:
+
+```groovy
+pipeline {
+  agent any
+  stages {
+    stage('build') {
+      steps {
+        sh '''#!/bin/bash
+          set -o pipefail
+          {
+            ./your-build-and-test-commands-here
+          } 2>&1 | tee ci-medic-console.log
+        '''
+      }
+    }
+  }
+  post {
+    failure {
+      script {
+        def verdict = sh(
+          script: 'ci-medic jenkins --file ci-medic-console.log --job "$JOB_NAME"',
+          returnStdout: true
+        ).trim()
+        currentBuild.description = verdict
+      }
+    }
+  }
+}
+```
+
+`set -o pipefail` (with the `#!/bin/bash` shebang) ensures the stage still fails when your command fails — `tee` would otherwise mask the exit code. The verdict appears at the top of the failed build's page.
+
+---
+
+## CLI / local use
+
+Run ci-medic directly on any log file — no CI, no GitHub. Good for trying it out, for unsupported CI systems, or for a fully offline setup.
+
+```bash
+pip install INSTALL_LINE
+
+# Distill only — no key needed, nothing leaves your machine:
 ci-medic analyze --file path/to/failed.log --no-llm
-
-# Fetch a CI run from github using pull.sh which uses gh to pull the logs and save it tests/fixtures/*.log
-#   ./pull.sh OWNER/REPO                 # interactive: list failed runs+jobs, pick one
-#   ./pull.sh OWNER/REPO --list          # just list failed runs+jobs with IDs, no pull
-#   ./pull.sh OWNER/REPO --job JOB_ID    # pull one specific job log by id
-#   ./pull.sh OWNER/REPO --all [N]       # bulk: pull all failed jobs from latest N runs (default 1)
-
-
 
 # Full triage with an AI verdict:
 export CI_MEDIC_API_KEY="your-key"
-export CI_MEDIC_BASE_URL="https://openrouter.ai/api/v1"   # any OpenAI-compatible endpoint
-export CI_MEDIC_MODEL="anthropic/claude-3.5-haiku"        # or a local Ollama / llama.cpp model
+export CI_MEDIC_BASE_URL="https://openrouter.ai/api/v1"
 ci-medic analyze --file path/to/failed.log
 ```
 
-For a fully local, zero-egress setup, point `CI_MEDIC_BASE_URL` at a local model
-server (Ollama at `http://localhost:11434/v1`, or llama.cpp's `llama-server`).
+PULL_SH_BLOCK
+
+---
+
+## Self-hosting / fully local (zero egress)
+
+ci-medic talks to any OpenAI-compatible endpoint, so you can keep logs entirely inside your network by pointing it at a local model server:
+
+```bash
+export CI_MEDIC_BASE_URL="http://localhost:11434/v1"   # Ollama
+# or llama.cpp's llama-server, or any OpenAI-compatible server
+export CI_MEDIC_MODEL="your-local-model"
+ci-medic analyze --file failed.log
+```
+
+With a local model and no cloud key set, nothing about your logs ever leaves the machine. The distillation and redaction steps run locally regardless of which model you choose.
+
+---
+
+## Models
+
+ci-medic uses any OpenAI-compatible API (OpenRouter, OpenAI, a local server) or the Anthropic API directly. Configure via environment or `.ci-medic.yml`.
+
+When a key is set and no model is specified, ci-medic tries a priority chain and falls through on failure (rate-limit, no-credit), recording which models were tried:
+
+```
+1. anthropic/claude-3.5-haiku            (reliable default)
+2. openai/gpt-4o-mini                     (reliable backup)
+3. openai/gpt-oss-120b:free               (strong free)
+4. qwen/qwen3-next-80b-a3b-instruct:free  (free)
+5. meta-llama/llama-3.3-70b-instruct:free (free fallback)
+```
+
+> **Note:** free-tier models are rate-limited and shared; for reliable results, use a key with credit so the primary model answers first. Logs are distilled to a small window before the model sees them, so a typical analysis costs a fraction of a cent.
+
+---
 
 ## Configuration
 
-Optional `.ci-medic.yml` in your repo root:
+Optional `.ci-medic.yml` in your repo root (see `examples/.ci-medic.yml`):
 
 ```yaml
-provider: openai-compat        # or: anthropic
+provider: openai-compat                       # or: anthropic
 model: anthropic/claude-3.5-haiku
 base_url: https://openrouter.ai/api/v1
 char_budget: 12000
-ignore_jobs: ["lint", "codeql"]
-extra_signals: ["MY_CUSTOM_ERROR_TOKEN"]
+ignore_jobs: ["lint", "codeql"]               # skip these jobs
+extra_signals: ["MY_CUSTOM_ERROR_TOKEN"]      # extra strings to treat as errors
 ```
 
-You can check the `examples/.ci-medic.yaml` for this.
+Environment variables (`CI_MEDIC_API_KEY`, `CI_MEDIC_BASE_URL`, `CI_MEDIC_MODEL`) override the file.
 
-By default if you define the openrouter api key, the default free model priority will be:
+---
 
-- "anthropic/claude-3.5-haiku",          # reliable default
-- "openai/gpt-4o-mini",                  # reliable backup
-- "meta-llama/llama-3.3-70b-instruct:free",  # free fallback
+## How it works
+
+1. **Trigger** on failure (Action job, Jenkins `post { failure }`, or manual CLI).
+2. **Collect** the failed logs (GitHub API on Actions; a tee'd file on Jenkins).
+3. **Distill, deterministically:** strip ANSI and timestamps, collapse repeated lines, **redact secrets**, and extract the highest-signal error windows — reducing thousands of lines to a small budget.
+4. **Verdict:** send only that distilled evidence to a model for a structured result (category, confidence, root cause, suggested fix, evidence).
+5. **Post** it where you'll see it.
+
+Only the distilled, redacted window is ever sent to a model — never your raw logs.
+
+---
 
 ## Privacy & security
 
-ci-medic redacts known secret formats (AWS keys, GitHub tokens, JWTs, private
-keys, bearer tokens, credentials-in-URLs) **and** runs an entropy filter that
-catches high-randomness strings even in unknown formats — before any model call.
-For zero data egress, point it at a local model.
+Before any model call, ci-medic redacts known secret formats (AWS keys, GitHub tokens, JWTs, private keys, bearer tokens, credentials-in-URLs) **and** runs an entropy filter that catches high-randomness strings even in unknown formats. For zero egress, point it at a local model and set no cloud key.
 
-## Status
+---
 
-v0.1 — GitHub Actions. Roadmap: Jenkins (v0.2), GitLab CI (v0.3), flaky-test
-memory (v0.4), hardware/LAVA log triage (v0.5).
+## Roadmap
+
+v0.1 ships GitHub Actions and Jenkins. Next: GitLab CI (v0.3), flaky-test memory that tracks chronic flakes across runs (v0.4), and hardware/LAVA log triage (v0.5).
 
 ## License
 
